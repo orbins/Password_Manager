@@ -18,7 +18,7 @@ logger.addHandler(stream_handler)
 class PasswordManager:
 
     def __init__(self):
-        self.db_file = Path(__file__).cwd() / "passwords.db"
+        self.db_file = Path(__file__).cwd() / "db_file.db"
 
     @staticmethod
     def hash_password(self, password):
@@ -28,7 +28,7 @@ class PasswordManager:
 
     def register(self):
         try:
-            connection = sqlite3.connect("passwords.db")
+            connection = sqlite3.connect("db_file.db")
         except ConnectionError:
             logger.error('Файл базы данных не найден, не удалось установить соединение!')
             return
@@ -58,14 +58,39 @@ class PasswordManager:
             logging.error('В файле БД отсутствует таблица с пользователями!')
 
     def login(self):
-        ...
+        try:
+            connection = sqlite3.connect("db_file.db")
+        except ConnectionError:
+            logger.error('Файл базы данных не найден, не удалось установить соединение!')
+            return
+        cursor = connection.cursor()
+        table = cursor.execute(
+            """SELECT name FROM sqlite_master WHERE type='table' AND name='users'"""
+        ).fetchone()
+        if table:
+            login = input("Введите логин: ")
+            master_password = getpass("Введите пароль: ")
+            hashed_password = self.hash_password(master_password)
+            user = cursor.execute(
+                """SELECT * FROM users WHERE (username is ?, password is ?)""",
+                (login, hashed_password)
+            ).fetchone()
+            connection.close()
+            logging.info(f'user: {user}')
+            if user:
+                self.select_action(user)
+            else:
+                logging.warning("Неверные данные для входа, попробуйте ещё раз!")
+                self.login()
+        else:
+            logging.error('В файле БД отсутствует таблица с пользователями!')
 
     def encrypt_password(self, password):
         ...
 
-    def add_password(self):
+    def add_password(self, user):
         try:
-            connection = sqlite3.connect("passwords.db")
+            connection = sqlite3.connect("db_file.db")
         except ConnectionError:
             logger.error('Файл базы данных не найден, не удалось установить соединение!')
             return
@@ -89,27 +114,32 @@ class PasswordManager:
                     encrypted = self.encrypt_password(password)
                 else:
                     logging.error("Пароли не похожи, попробуйте заново!")
-                    self.add_password()
+                    self.add_password(user)
             else:
-                self.add_password()
+                self.add_password(user)
         else:
             logging.error('В файле БД отсутствует таблица с паролями!')
 
-    def select_service(self):
+    def select_service(self, user):
         ...
 
-    def generate_password(self):
+    def generate_password(self, user):
         ...
 
-    def select_action(self):
-        action = input(
-            "Выберите действие: " 
-            "\n1.Add\n2.Copy\n3.Change\n4.Generate"
-        )
-        match action.lower():
-            case '1': self.add_password()
-            case '2', '3': self.select_service()
-            case '4': self.generate_password()
+    def delete_service(self, user):
+
+    def select_action(self, user):
+        while True:
+            action = input(
+                "Выберите действие: " 
+                "\n1.Add\n2.Copy\n3.Change\n4.Generate\n5.Delete\n6.Quit"
+            )
+            match action.lower():
+                case '1': self.add_password(user)
+                case '2', '3': self.select_service(user)
+                case '4': self.generate_password(user)
+                case '5': self.delete_service(user)
+                case _: break
 
     def main(self):
         if self.db_file.exists():
@@ -119,6 +149,7 @@ class PasswordManager:
             )
             if choice == '1':
                 self.register()
+                self.login()
             elif choice == '2':
                 self.login()
         else:
