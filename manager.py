@@ -20,10 +20,42 @@ class PasswordManager:
     def __init__(self):
         self.db_file = Path(__file__).cwd() / "passwords.db"
 
+    @staticmethod
     def hash_password(self, password):
         sha256 = hashlib.sha256()
         sha256.update(password.encode())
         return sha256.hexdigest()
+
+    def register(self):
+        try:
+            connection = sqlite3.connect("passwords.db")
+        except ConnectionError:
+            logger.error('Файл базы данных не найден, не удалось установить соединение!')
+            return
+        cursor = connection.cursor()
+        table = cursor.execute(
+            """SELECT name FROM sqlite_master WHERE type='table' AND name='users'"""
+        ).fetchone()
+        if table:
+            username = input("Придумайте логин: ")
+            user = cursor.execute(
+                """SELECT * FROM users WHERE username is ?""",
+                (username, )
+            ).fetchone()
+            if user:
+                logging.info("Данный юзернейм уже занят!")
+                self.register()
+            master_password = getpass("Задайте пароль: ")
+            hashed_password = self.hash_password(master_password)
+            cursor.execute(
+                """INSERT INTO users (username, password)  VALUES (?, ?)""",
+                (username, hashed_password)
+            )
+            connection.commit()
+            connection.close()
+            logger.info('Пользователь успешно создан!')
+        else:
+            logging.error('В файле БД отсутствует таблица с пользователями!')
 
     def login(self):
         ...
