@@ -1,7 +1,10 @@
 from getpass import getpass
+import hashlib
 import logging
 from pathlib import Path
 import sqlite3
+
+from cryptography.fernet import Fernet
 
 logger = logging.getLogger(__name__)
 formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
@@ -16,6 +19,17 @@ class PasswordManager:
 
     def __init__(self):
         self.db_file = Path(__file__).cwd() / "passwords.db"
+
+    def hash_password(self, password):
+        sha256 = hashlib.sha256()
+        sha256.update(password.encode())
+        return sha256.hexdigest()
+
+    def login(self):
+        ...
+
+    def encrypt_password(self, password):
+        ...
 
     def add_password(self):
         try:
@@ -40,7 +54,7 @@ class PasswordManager:
                 password = getpass("Введите пароль: ")
                 password2 = getpass("Повторите пароль: ")
                 if password == password2:
-                    ...
+                    encrypted = self.encrypt_password(password)
                 else:
                     logging.error("Пароли не похожи, попробуйте заново!")
                     self.add_password()
@@ -55,16 +69,26 @@ class PasswordManager:
     def generate_password(self):
         ...
 
+    def select_action(self):
+        action = input(
+            "Выберите действие: " 
+            "\n1.Add\n2.Copy\n3.Change\n4.Generate"
+        )
+        match action.lower():
+            case '1': self.add_password()
+            case '2', '3': self.select_service()
+            case '4': self.generate_password()
+
     def main(self):
         if self.db_file.exists():
-            action = input(
-                "Выберите действие: " 
-                "\n1.Add\n2.Copy\n3.Change\n4.Generate"
+            choice = input(
+                "Выберите действие: "
+                "\n1.Register\n2.Login\n3.Quit"
             )
-            match action.lower():
-                case 'add': self.add_password()
-                case 'copy', 'change': self.select_service()
-                case 'generate': self.generate_password()
+            if choice == '1':
+                self.register()
+            elif choice == '2':
+                self.login()
         else:
             logging.error('Не удалось найти файл базы данных!')
 
