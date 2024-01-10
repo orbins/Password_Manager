@@ -127,6 +127,7 @@ class PasswordManager:
         ...
 
     def delete_service(self, user):
+        ...
 
     def select_action(self, user):
         while True:
