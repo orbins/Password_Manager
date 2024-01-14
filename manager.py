@@ -33,7 +33,7 @@ class PasswordManager:
         try:
             connection = sqlite3.connect("db_file.db")
         except ConnectionError:
-            logger.error('Файл базы данных не найден, не удалось установить соединение!')
+            print('Файл базы данных не найден, не удалось установить соединение!')
             return
         cursor = connection.cursor()
         table = cursor.execute(
@@ -46,7 +46,7 @@ class PasswordManager:
                 (username, )
             ).fetchone()
             if user:
-                logging.info("Данный юзернейм уже занят!")
+                print("Данный юзернейм уже занят!")
                 self.register()
             master_password = getpass("Задайте пароль: ")
             hashed_password = self.hash_password(master_password)
@@ -57,7 +57,7 @@ class PasswordManager:
             )
             connection.commit()
             connection.close()
-            logger.info('Пользователь успешно создан!')
+            print('Аккаунт успешно создан!')
         else:
             logging.error('В файле БД отсутствует таблица с пользователями!')
 
@@ -65,7 +65,7 @@ class PasswordManager:
         try:
             connection = sqlite3.connect("db_file.db")
         except ConnectionError:
-            logger.error('Файл базы данных не найден, не удалось установить соединение!')
+            print('Файл базы данных не найден, не удалось установить соединение!')
             return
         cursor = connection.cursor()
         table = cursor.execute(
@@ -80,7 +80,7 @@ class PasswordManager:
                 (login, hashed_password)
             ).fetchone()
             connection.close()
-            logging.info(f'user: {user}')
+            print(f'user: {user}')
             if user:
                 self.select_action(user)
             else:
@@ -96,7 +96,7 @@ class PasswordManager:
         try:
             connection = sqlite3.connect("db_file.db")
         except ConnectionError:
-            logger.error('Файл базы данных не найден, не удалось установить соединение!')
+            print('Файл базы данных не найден, не удалось установить соединение!')
             return
         cursor = connection.cursor()
         table = cursor.execute(
