@@ -26,8 +26,10 @@ class PasswordManager:
         sha256.update(password.encode())
         return sha256.hexdigest()
 
-    def generate_key(self, user):
+    @staticmethod
+    def generate_key():
         key = Fernet.generate_key()
+        return key
 
     def register(self):
         try:
@@ -39,6 +41,7 @@ class PasswordManager:
         table = cursor.execute(
             """SELECT name FROM sqlite_master WHERE type='table' AND name='users'"""
         ).fetchone()
+        connection.close()
         if table:
             username = input("Придумайте логин: ")
             user = cursor.execute(
@@ -47,17 +50,19 @@ class PasswordManager:
             ).fetchone()
             if user:
                 print("Данный юзернейм уже занят!")
-                self.register()
-            master_password = getpass("Задайте пароль: ")
-            hashed_password = self.hash_password(master_password)
-            # генерация ключа для шифрования паролей
-            cursor.execute(
-                """INSERT INTO users (username, password)  VALUES (?, ?)""",
-                (username, hashed_password)
-            )
-            connection.commit()
-            connection.close()
-            print('Аккаунт успешно создан!')
+            else:
+                master_password = getpass("Задайте пароль: ")
+                hashed_password = self.hash_password(master_password)
+                key = self.generate_key()
+                connection = sqlite3.connect("db_file.db")
+                cursor = connection.cursor()
+                cursor.execute(
+                    """INSERT INTO users (username, password, key)  VALUES (?, ?, ?)""",
+                    (username, hashed_password, key,),
+                )
+                connection.commit()
+                connection.close()
+                print('Аккаунт успешно создан!')
         else:
             logging.error('В файле БД отсутствует таблица с пользователями!')
 
@@ -71,10 +76,13 @@ class PasswordManager:
         table = cursor.execute(
             """SELECT name FROM sqlite_master WHERE type='table' AND name='users'"""
         ).fetchone()
+        connection.close()
         if table:
             login = input("Введите логин: ")
             master_password = getpass("Введите пароль: ")
             hashed_password = self.hash_password(master_password)
+            connection = sqlite3.connect("db_file.db")
+            cursor = connection.cursor()
             user = cursor.execute(
                 """SELECT * FROM users WHERE (username is ?, password is ?)""",
                 (login, hashed_password)
@@ -84,13 +92,16 @@ class PasswordManager:
             if user:
                 self.select_action(user)
             else:
-                logging.warning("Неверные данные для входа, попробуйте ещё раз!")
+                print("Неверные данные для входа, попробуйте ещё раз!")
                 self.login()
         else:
             logging.error('В файле БД отсутствует таблица с пользователями!')
 
-    def encrypt_password(self, password):
-        ...
+    @staticmethod
+    def encrypt_password(self, password, user):
+        key = user[2]
+        encoder = Fernet(key)
+        return encoder.encrypt(password)
 
     def add_password(self, user):
         try:
@@ -104,23 +115,36 @@ class PasswordManager:
             SELECT name FROM sqlite_master WHERE type='table' AND name='passwords'
             """
         ).fetchone()
+        connection.close()
         if table:
             service_name = input("Введите имя сервиса: ")
-            login = input('Введите логин: ')
+            login = input('Введите логин, используемый для сервиса: ')
             is_additional_info = input('Наличие доп. данных? Введите y: ')
             if is_additional_info.lower() == 'y':
                 info = input('Введите доп. инфу: ')
-            is_accepted = input(f"Имя сервис: {service_name}\nЛогин: {login}\nДоп. данные: {info}. Подтвердить y/n: ")
+            else:
+                info = '-'
+            is_accepted = input(
+                f"Имя сервис: {service_name}\nЛогин: {login}\nДоп. данные: {info}\n"
+                "Для подтверждения введите 'y', иначе операция будет отклонена"
+            )
             if is_accepted.lower() == 'y':
                 password = getpass("Введите пароль: ")
                 password2 = getpass("Повторите пароль: ")
                 if password == password2:
-                    encrypted = self.encrypt_password(password)
+                    encrypted = self.encrypt_password(password, user)
+                    connection = sqlite3.connect("db_file.db")
+                    cursor = connection.cursor()
+                    cursor.execute(
+                        """INSERT INTO passwords (user, service, login, password, info)  VALUES (?, ?, ?, ?, ?)""",
+                        (user[0], service_name, login, encrypted, info),
+                    ).fetchone()
+                    connection.commit()
+                    connection.close()
+                    return
                 else:
                     logging.error("Пароли не похожи, попробуйте заново!")
-                    self.add_password(user)
-            else:
-                self.add_password(user)
+            self.add_password(user)
         else:
             logging.error('В файле БД отсутствует таблица с паролями!')
 
