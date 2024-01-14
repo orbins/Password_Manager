@@ -21,10 +21,13 @@ class PasswordManager:
         self.db_file = Path(__file__).cwd() / "db_file.db"
 
     @staticmethod
-    def hash_password(self, password):
+    def hash_password(password):
         sha256 = hashlib.sha256()
         sha256.update(password.encode())
         return sha256.hexdigest()
+
+    def generate_key(self, user):
+        key = Fernet.generate_key()
 
     def register(self):
         try:
@@ -47,6 +50,7 @@ class PasswordManager:
                 self.register()
             master_password = getpass("Задайте пароль: ")
             hashed_password = self.hash_password(master_password)
+            # генерация ключа для шифрования паролей
             cursor.execute(
                 """INSERT INTO users (username, password)  VALUES (?, ?)""",
                 (username, hashed_password)
@@ -144,15 +148,19 @@ class PasswordManager:
 
     def main(self):
         if self.db_file.exists():
-            choice = input(
-                "Выберите действие: "
-                "\n1.Register\n2.Login\n3.Quit"
-            )
-            if choice == '1':
-                self.register()
-                self.login()
-            elif choice == '2':
-                self.login()
+            while True:
+                choice = input(
+                    "Выберите действие: "
+                    "\n1.Register\n2.Login\n3.Quit"
+                )
+                if choice == '1':
+                    self.register()
+                elif choice == '2':
+                    self.login()
+                elif choice == '3':
+                    break
+                else:
+                    print('Такой команды не существует!')
         else:
             logging.error('Не удалось найти файл базы данных!')
 
