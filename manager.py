@@ -6,6 +6,8 @@ import sqlite3
 
 from cryptography.fernet import Fernet
 
+from database_manager import DataBaseManager
+
 logger = logging.getLogger(__name__)
 formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 
@@ -17,8 +19,8 @@ logger.addHandler(stream_handler)
 
 class PasswordManager:
 
-    def __init__(self):
-        self.db_file = Path(__file__).cwd() / "db_file.db"
+    def __init__(self, db_manager):
+        self.db_manager = db_manager
 
     @staticmethod
     def hash_password(password):
@@ -32,121 +34,82 @@ class PasswordManager:
         return key
 
     def register(self):
-        try:
-            connection = sqlite3.connect("db_file.db")
-        except ConnectionError:
-            print('Файл базы данных не найден, не удалось установить соединение!')
-            return
+        username = input("Придумайте логин: ")
+        connection = sqlite3.connect("db_file.db")
         cursor = connection.cursor()
-        table = cursor.execute(
-            """SELECT name FROM sqlite_master WHERE type='table' AND name='users'"""
+        user = cursor.execute(
+            """SELECT * FROM users WHERE username is ?""",
+            (username, )
         ).fetchone()
-        connection.close()
-        if table:
-            username = input("Придумайте логин: ")
-            user = cursor.execute(
-                """SELECT * FROM users WHERE username is ?""",
-                (username, )
-            ).fetchone()
-            if user:
-                print("Данный юзернейм уже занят!")
-            else:
-                master_password = getpass("Задайте пароль: ")
-                hashed_password = self.hash_password(master_password)
-                key = self.generate_key()
-                connection = sqlite3.connect("db_file.db")
-                cursor = connection.cursor()
-                cursor.execute(
-                    """INSERT INTO users (username, password, key)  VALUES (?, ?, ?)""",
-                    (username, hashed_password, key,),
-                )
-                connection.commit()
-                connection.close()
-                print('Аккаунт успешно создан!')
+        if user:
+            print("Данный юзернейм уже занят!")
         else:
-            logging.error('В файле БД отсутствует таблица с пользователями!')
-
-    def login(self):
-        try:
-            connection = sqlite3.connect("db_file.db")
-        except ConnectionError:
-            print('Файл базы данных не найден, не удалось установить соединение!')
-            return
-        cursor = connection.cursor()
-        table = cursor.execute(
-            """SELECT name FROM sqlite_master WHERE type='table' AND name='users'"""
-        ).fetchone()
-        connection.close()
-        if table:
-            login = input("Введите логин: ")
-            master_password = getpass("Введите пароль: ")
+            master_password = getpass("Задайте пароль: ")
             hashed_password = self.hash_password(master_password)
+            key = self.generate_key()
             connection = sqlite3.connect("db_file.db")
             cursor = connection.cursor()
-            user = cursor.execute(
-                """SELECT * FROM users WHERE (username is ?, password is ?)""",
-                (login, hashed_password)
-            ).fetchone()
+            cursor.execute(
+                """INSERT INTO users (username, password, key)  VALUES (?, ?, ?)""",
+                (username, hashed_password, key,),
+            )
+            connection.commit()
             connection.close()
-            print(f'user: {user}')
-            if user:
-                self.select_action(user)
-            else:
-                print("Неверные данные для входа, попробуйте ещё раз!")
-                self.login()
+            print('Аккаунт успешно создан!')
+
+    def login(self):
+        login = input("Введите логин: ")
+        master_password = getpass("Введите пароль: ")
+        hashed_password = self.hash_password(master_password)
+        connection = sqlite3.connect("db_file.db")
+        cursor = connection.cursor()
+        user = cursor.execute(
+            """SELECT * FROM users WHERE (username is ?, password is ?)""",
+            (login, hashed_password)
+        ).fetchone()
+        connection.close()
+        print(f'user: {user}')
+        if user:
+            self.select_action(user)
         else:
-            logging.error('В файле БД отсутствует таблица с пользователями!')
+            print("Неверные данные для входа, попробуйте ещё раз!")
+            self.login()
 
     @staticmethod
-    def encrypt_password(self, password, user):
-        key = user[2]
+    def encrypt_password(password, user):
+        key = user[3]
         encoder = Fernet(key)
         return encoder.encrypt(password)
 
     def add_password(self, user):
-        try:
-            connection = sqlite3.connect("db_file.db")
-        except ConnectionError:
-            print('Файл базы данных не найден, не удалось установить соединение!')
-            return
-        cursor = connection.cursor()
-        table = cursor.execute(
-            """
-            SELECT name FROM sqlite_master WHERE type='table' AND name='passwords'
-            """
-        ).fetchone()
-        connection.close()
-        if table:
-            service_name = input("Введите имя сервиса: ")
-            login = input('Введите логин, используемый для сервиса: ')
-            is_additional_info = input('Наличие доп. данных? Введите y: ')
-            if is_additional_info.lower() == 'y':
-                info = input('Введите доп. инфу: ')
-            else:
-                info = '-'
-            is_accepted = input(
-                f"Имя сервис: {service_name}\nЛогин: {login}\nДоп. данные: {info}\n"
-                "Для подтверждения введите 'y', иначе операция будет отклонена"
-            )
-            if is_accepted.lower() == 'y':
-                password = getpass("Введите пароль: ")
-                password2 = getpass("Повторите пароль: ")
-                if password == password2:
-                    encrypted = self.encrypt_password(password, user)
-                    connection = sqlite3.connect("db_file.db")
-                    cursor = connection.cursor()
-                    cursor.execute(
-                        """INSERT INTO passwords (user, service, login, password, info)  VALUES (?, ?, ?, ?, ?)""",
-                        (user[0], service_name, login, encrypted, info),
-                    ).fetchone()
-                    connection.commit()
-                    connection.close()
-                    return
-                else:
-                    logging.error("Пароли не похожи, попробуйте заново!")
-            self.add_password(user)
+        service_name = input("Введите имя сервиса: ")
+        login = input('Введите логин, используемый для сервиса: ')
+        is_additional_info = input('Наличие доп. данных? Введите y: ')
+        if is_additional_info.lower() == 'y':
+            info = input('Введите доп. инфу: ')
         else:
-            logging.error('В файле БД отсутствует таблица с паролями!')
+            info = '-'
+        is_accepted = input(
+            f"Имя сервис: {service_name}\nЛогин: {login}\nДоп. данные: {info}\n"
+            "Для подтверждения введите 'y', иначе операция будет отклонена"
+        )
+        if is_accepted.lower() == 'y':
+            password = getpass("Введите пароль: ")
+            password2 = getpass("Повторите пароль: ")
+            if password == password2:
+                encrypted = self.encrypt_password(password, user)
+                connection = sqlite3.connect("db_file.db")
+                cursor = connection.cursor()
+                cursor.execute(
+                    """INSERT INTO services (userid, service, login, password, info)  VALUES (?, ?, ?, ?, ?)""",
+                    (user[0], service_name, login, encrypted, info),
+                ).fetchone()
+                connection.commit()
+                connection.close()
+                return
+            else:
+                logging.error("Пароли не похожи, попробуйте заново!")
+        self.add_password(user)
 
     def select_service(self, user):
         ...
@@ -171,24 +134,25 @@ class PasswordManager:
                 case _: break
 
     def main(self):
-        if self.db_file.exists():
-            while True:
-                choice = input(
-                    "Выберите действие: "
-                    "\n1.Register\n2.Login\n3.Quit"
-                )
-                if choice == '1':
-                    self.register()
-                elif choice == '2':
-                    self.login()
-                elif choice == '3':
-                    break
-                else:
-                    print('Такой команды не существует!')
-        else:
-            logging.error('Не удалось найти файл базы данных!')
+        while True:
+            choice = input(
+                "Выберите действие: "
+                "\n1.Register\n2.Login\n3.Quit"
+            )
+            if choice == '1':
+                self.register()
+            elif choice == '2':
+                self.login()
+            elif choice == '3':
+                break
+            else:
+                print('Такой команды не существует!')
 
 
 if __name__ == '__main__':
-    manager = PasswordManager()
+    file = Path(__file__).cwd() / "db_file.db"
+    db_mng = DataBaseManager(file)
+    if not file.exists():
+        db_mng.create_database()
+    manager = PasswordManager(db_mng)
     manager.main()
