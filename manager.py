@@ -35,39 +35,21 @@ class PasswordManager:
 
     def register(self):
         username = input("Придумайте логин: ")
-        connection = sqlite3.connect("db_file.db")
-        cursor = connection.cursor()
-        user = cursor.execute(
-            """SELECT * FROM users WHERE username is ?""",
-            (username, )
-        ).fetchone()
+        user = self.db_manager.get_user(username)
         if user:
             print("Данный юзернейм уже занят!")
         else:
             master_password = getpass("Задайте пароль: ")
             hashed_password = self.hash_password(master_password)
             key = self.generate_key()
-            connection = sqlite3.connect("db_file.db")
-            cursor = connection.cursor()
-            cursor.execute(
-                """INSERT INTO users (username, password, key)  VALUES (?, ?, ?)""",
-                (username, hashed_password, key,),
-            )
-            connection.commit()
-            connection.close()
+            self.db_manager.create_user(username, hashed_password, key)
             print('Аккаунт успешно создан!')
 
     def login(self):
         login = input("Введите логин: ")
         master_password = getpass("Введите пароль: ")
         hashed_password = self.hash_password(master_password)
-        connection = sqlite3.connect("db_file.db")
-        cursor = connection.cursor()
-        user = cursor.execute(
-            """SELECT * FROM users WHERE (username is ?, password is ?)""",
-            (login, hashed_password)
-        ).fetchone()
-        connection.close()
+        user = self.db_manager.check_data(login, hashed_password)
         print(f'user: {user}')
         if user:
             self.select_action(user)
@@ -98,14 +80,7 @@ class PasswordManager:
             password2 = getpass("Повторите пароль: ")
             if password == password2:
                 encrypted = self.encrypt_password(password, user)
-                connection = sqlite3.connect("db_file.db")
-                cursor = connection.cursor()
-                cursor.execute(
-                    """INSERT INTO services (userid, service, login, password, info)  VALUES (?, ?, ?, ?, ?)""",
-                    (user[0], service_name, login, encrypted, info),
-                ).fetchone()
-                connection.commit()
-                connection.close()
+                self.db_manager.add_service(user[0], service_name, login, encrypted, info)
                 return
             else:
                 logging.error("Пароли не похожи, попробуйте заново!")
