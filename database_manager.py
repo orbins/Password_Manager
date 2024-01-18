@@ -51,7 +51,7 @@ class DataBaseManager:
     def get_user(self, username):
         conn, cursor = self.connect()
         user = cursor.execute(
-            """SELECT * FROM users WHERE username is ?""",
+            """SELECT * FROM users WHERE username = ?""",
             (username,)
         ).fetchone()
         self.disconnect(conn)
@@ -68,8 +68,8 @@ class DataBaseManager:
     def check_data(self, login, password):
         conn, cursor = self.connect()
         user = cursor.execute(
-            """SELECT * FROM users WHERE (username is ?, password is ?)""",
-            (login, password,)
+            """SELECT * FROM users WHERE (username = ? AND password = ?)""",
+            (login, password)
         ).fetchone()
         self.disconnect(conn)
         return user
@@ -85,7 +85,7 @@ class DataBaseManager:
     def get_services_list(self, userid):
         conn, cursor = self.connect()
         result = cursor.execute(
-            """SELECT service FROM SERVICES WHERE (userid is ?)""",
+            """SELECT service FROM SERVICES WHERE (userid = ?)""",
             (userid,)
         ).fetchall()
         return result
@@ -93,7 +93,7 @@ class DataBaseManager:
     def get_service_data(self, userid, service):
         conn, cursor = self.connect()
         result = cursor.execute(
-            """SELECT * FROM SERVICES WHERE (userid is ? service is ?)""",
+            """SELECT * FROM SERVICES WHERE (userid = ? AND service = ?)""",
             (userid, service,)
         ).fetchone()
         return result

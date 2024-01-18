@@ -1,4 +1,4 @@
-from getpass import getpass
+import getpass
 import hashlib
 import logging
 from pathlib import Path
@@ -40,7 +40,7 @@ class PasswordManager:
         if user:
             print("Данный юзернейм уже занят!")
         else:
-            master_password = getpass("Задайте пароль: ")
+            master_password = getpass.getpass("Задайте пароль: ")
             hashed_password = self.hash_password(master_password)
             key = self.generate_key()
             self.db_manager.create_user(username, hashed_password, key)
@@ -48,10 +48,9 @@ class PasswordManager:
 
     def login(self):
         login = input("Введите логин: ")
-        master_password = getpass("Введите пароль: ")
+        master_password = getpass.getpass("Введите пароль: ")
         hashed_password = self.hash_password(master_password)
         user = self.db_manager.check_data(login, hashed_password)
-        print(f'user: {user}')
         if user:
             self.select_action(user)
         else:
@@ -61,12 +60,12 @@ class PasswordManager:
     @staticmethod
     def encrypt_password(password, key):
         encoder = Fernet(key)
-        return encoder.encrypt(password)
+        return encoder.encrypt(password.encode())
 
     @staticmethod
     def decrypt_password(password, key):
         encoder = Fernet(key)
-        return encoder.decrypt(password)
+        return encoder.decrypt(password).decode()
 
     def add_password(self, user):
         service_name = input("Введите имя сервиса: ")
@@ -78,14 +77,15 @@ class PasswordManager:
             info = '-'
         is_accepted = input(
             f"Имя сервис: {service_name}\nЛогин: {login}\nДоп. данные: {info}\n"
-            "Для подтверждения введите 'y', иначе операция будет отклонена"
+            "Для подтверждения введите 'y', иначе операция будет отклонена: "
         )
         if is_accepted.lower() == 'y':
-            password = getpass("Введите пароль: ")
-            password2 = getpass("Повторите пароль: ")
+            password = getpass.getpass("Введите пароль: ")
+            password2 = getpass.getpass("Повторите пароль: ")
             if password == password2:
                 token = self.encrypt_password(password, user[3])
                 self.db_manager.add_service(user[0], service_name, login, token, info)
+                print('Сервис успешно добавлен!')
                 return
             else:
                 logging.error("Пароли не похожи, попробуйте заново!")
@@ -93,8 +93,8 @@ class PasswordManager:
 
     def select_service(self, user, action):
         services_list = db_mng.get_services_list(user[0])
-        text = "\n".join(row[0] for row in services_list)
-        choice = input(f"Введите имя сервиса: {text}")
+        text = "-\n".join(row[0] for row in services_list)
+        choice = input(f"{text}\nВведите имя сервиса: ")
         service_data = db_mng.get_service_data(user[0], choice)
         if service_data:
             if action == '2':
@@ -104,7 +104,7 @@ class PasswordManager:
                 pyperclip.copy(password)
                 print(f'Сервис: {service_data[1]}\n'
                       f'Логин: {service_data[2]}\n'
-                      f'Доп.инфа: {service_data[3]}\n'
+                      f'Доп.инфа: {service_data[4]}\n'
                       f'Ваш пароль скопирован в буфер обмена!')
             elif action == '3':
                 self.update_service(service_data)
@@ -113,7 +113,6 @@ class PasswordManager:
         else:
             print("Сервис с таким именем не найден, попробуйте ещё раз!")
             self.select_service(user, action)
-
 
     def generate_password(self, user):
         ...
@@ -127,20 +126,21 @@ class PasswordManager:
     def select_action(self, user):
         while True:
             action = input(
-                "Выберите действие: " 
-                "\n1.Add\n2.Get\n3.Change\n4.Delete\n5.Generate\n6.Quit"
+                "1.Add\n2.Get\n3.Change\n4.Delete\n5.Generate\n6.Quit\n"
+                "Выберите действие: "
             )
             match action:
                 case '1': self.add_password(user)
-                case '2', '3', '4': self.select_service(user, action)
+                case '2': self.select_service(user, action)
                 case '4': self.generate_password(user)
-                case _: break
+                case '6': break
+                case _: print('Такой команды не существует, попробуйте ещё раз!')
 
     def main(self):
         while True:
             choice = input(
+                "1.Register\n2.Login\n3.Quit\n"
                 "Выберите действие: "
-                "\n1.Register\n2.Login\n3.Quit"
             )
             if choice == '1':
                 self.register()
