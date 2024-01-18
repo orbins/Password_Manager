@@ -2,9 +2,10 @@ from getpass import getpass
 import hashlib
 import logging
 from pathlib import Path
-import sqlite3
+
 
 from cryptography.fernet import Fernet
+import pyperclip
 
 from database_manager import DataBaseManager
 
@@ -58,10 +59,14 @@ class PasswordManager:
             self.login()
 
     @staticmethod
-    def encrypt_password(password, user):
-        key = user[3]
+    def encrypt_password(password, key):
         encoder = Fernet(key)
         return encoder.encrypt(password)
+
+    @staticmethod
+    def decrypt_password(password, key):
+        encoder = Fernet(key)
+        return encoder.decrypt(password)
 
     def add_password(self, user):
         service_name = input("Введите имя сервиса: ")
@@ -79,33 +84,56 @@ class PasswordManager:
             password = getpass("Введите пароль: ")
             password2 = getpass("Повторите пароль: ")
             if password == password2:
-                encrypted = self.encrypt_password(password, user)
-                self.db_manager.add_service(user[0], service_name, login, encrypted, info)
+                token = self.encrypt_password(password, user[3])
+                self.db_manager.add_service(user[0], service_name, login, token, info)
                 return
             else:
                 logging.error("Пароли не похожи, попробуйте заново!")
         self.add_password(user)
 
-    def select_service(self, user):
-        ...
+    def select_service(self, user, action):
+        services_list = db_mng.get_services_list(user[0])
+        text = "\n".join(row[0] for row in services_list)
+        choice = input(f"Введите имя сервиса: {text}")
+        service_data = db_mng.get_service_data(user[0], choice)
+        if service_data:
+            if action == '2':
+                token = service_data[3]
+                key = user[3]
+                password = self.decrypt_password(token, key)
+                pyperclip.copy(password)
+                print(f'Сервис: {service_data[1]}\n'
+                      f'Логин: {service_data[2]}\n'
+                      f'Доп.инфа: {service_data[3]}\n'
+                      f'Ваш пароль скопирован в буфер обмена!')
+            elif action == '3':
+                self.update_service(service_data)
+            else:
+                self.delete_service(service_data)
+        else:
+            print("Сервис с таким именем не найден, попробуйте ещё раз!")
+            self.select_service(user, action)
+
 
     def generate_password(self, user):
         ...
 
-    def delete_service(self, user):
+    def delete_service(self, service):
+        ...
+
+    def update_service(self, service):
         ...
 
     def select_action(self, user):
         while True:
             action = input(
                 "Выберите действие: " 
-                "\n1.Add\n2.Copy\n3.Change\n4.Generate\n5.Delete\n6.Quit"
+                "\n1.Add\n2.Get\n3.Change\n4.Delete\n5.Generate\n6.Quit"
             )
-            match action.lower():
+            match action:
                 case '1': self.add_password(user)
-                case '2', '3': self.select_service(user)
+                case '2', '3', '4': self.select_service(user, action)
                 case '4': self.generate_password(user)
-                case '5': self.delete_service(user)
                 case _: break
 
     def main(self):

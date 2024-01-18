@@ -61,7 +61,7 @@ class DataBaseManager:
         conn, cursor = self.connect()
         cursor.execute(
             """INSERT INTO users (username, password, key)  VALUES (?, ?, ?)""",
-            (username, hashed_password, key),
+            (username, hashed_password, key,)
         )
         self.disconnect(conn)
 
@@ -69,7 +69,7 @@ class DataBaseManager:
         conn, cursor = self.connect()
         user = cursor.execute(
             """SELECT * FROM users WHERE (username is ?, password is ?)""",
-            (login, password)
+            (login, password,)
         ).fetchone()
         self.disconnect(conn)
         return user
@@ -81,3 +81,19 @@ class DataBaseManager:
             (userid, service, login, password, info),
         ).fetchone()
         self.disconnect(conn)
+
+    def get_services_list(self, userid):
+        conn, cursor = self.connect()
+        result = cursor.execute(
+            """SELECT service FROM SERVICES WHERE (userid is ?)""",
+            (userid,)
+        ).fetchall()
+        return result
+
+    def get_service_data(self, userid, service):
+        conn, cursor = self.connect()
+        result = cursor.execute(
+            """SELECT * FROM SERVICES WHERE (userid is ? service is ?)""",
+            (userid, service,)
+        ).fetchone()
+        return result
