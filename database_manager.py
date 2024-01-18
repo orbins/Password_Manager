@@ -48,7 +48,7 @@ class DataBaseManager:
 
         self.disconnect(conn)
 
-    def get_user(self, username):
+    def get_user(self, username: str):
         conn, cursor = self.connect()
         user = cursor.execute(
             """SELECT * FROM users WHERE username = ?""",
@@ -57,7 +57,7 @@ class DataBaseManager:
         self.disconnect(conn)
         return user
 
-    def create_user(self, username, hashed_password, key):
+    def create_user(self, username: str, hashed_password: bytes, key: bytes):
         conn, cursor = self.connect()
         cursor.execute(
             """INSERT INTO users (username, password, key)  VALUES (?, ?, ?)""",
@@ -65,7 +65,7 @@ class DataBaseManager:
         )
         self.disconnect(conn)
 
-    def check_data(self, login, password):
+    def check_data(self, login: str, password: bytes):
         conn, cursor = self.connect()
         user = cursor.execute(
             """SELECT userid FROM users WHERE (username = ? AND password = ?)""",
@@ -74,7 +74,8 @@ class DataBaseManager:
         self.disconnect(conn)
         return user
 
-    def add_service(self, userid, service, login, password, info):
+    def add_service(self, userid: int, service: str,
+                    login: str, password: bytes, info: str):
         conn, cursor = self.connect()
         cursor.execute(
             """INSERT INTO services (userid, service, login, password, info)  VALUES (?, ?, ?, ?, ?)""",
@@ -82,7 +83,7 @@ class DataBaseManager:
         ).fetchone()
         self.disconnect(conn)
 
-    def get_services_list(self, userid):
+    def get_services_list(self, userid: int):
         conn, cursor = self.connect()
         result = cursor.execute(
             """SELECT service FROM SERVICES WHERE (userid = ?)""",
@@ -90,7 +91,7 @@ class DataBaseManager:
         ).fetchall()
         return result
 
-    def get_service_data(self, userid, service):
+    def get_service_data(self, userid: int, service: str):
         conn, cursor = self.connect()
         result = cursor.execute(
             """SELECT * FROM SERVICES WHERE (userid = ? AND service = ?)""",
@@ -98,10 +99,18 @@ class DataBaseManager:
         ).fetchone()
         return result
 
-    def get_user_key(self, userid):
+    def get_user_key(self, userid: int):
         conn, cursor = self.connect()
         result = cursor.execute(
             """SELECT key FROM users WHERE (userid = ?)""",
             (userid,)
+        ).fetchone()
+        return result
+
+    def delete_service(self, userid: int, service_name: str):
+        conn, cursor = self.connect()
+        result = cursor.execute(
+            """DELETE * FROM services WHERE (userid = ? service = ?)""",
+            (userid, service_name,)
         ).fetchone()
         return result

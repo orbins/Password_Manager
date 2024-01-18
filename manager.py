@@ -117,9 +117,10 @@ class PasswordManager:
                       f'Доп.инфа: {service_data[4]}\n'
                       f'Ваш пароль скопирован в буфер обмена!')
             elif action == '3':
-                self.update_service(userid, service_data)
+                self.update_service(userid, service_data[1])
             else:
-                self.delete_service(userid, service_data)
+                self.db_manager.delete_service(userid, service_data[1])
+                print('Сервис успешно удалён!')
         else:
             print("Сервис с таким именем не найден, попробуйте ещё раз!")
             self.select_service(userid, action)
@@ -127,10 +128,7 @@ class PasswordManager:
     def generate_password(self, userid: int):
         ...
 
-    def delete_service(self, userid: int, service: tuple):
-        self.db_manager.delete_service()
-
-    def update_service(self, user: int, service: tuple):
+    def update_service(self, user: int, service_name: tuple):
         ...
 
     def select_action(self, userid: int) -> None:
