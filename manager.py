@@ -62,16 +62,16 @@ class PasswordManager:
             self.login()
 
     @staticmethod
-    def encrypt_password(password, key):
+    def encrypt_password(password: str, key: bytes) -> bytes:
         encoder = Fernet(key)
         return encoder.encrypt(password.encode())
 
     @staticmethod
-    def decrypt_password(password, key):
+    def decrypt_password(password: str, key: bytes) -> str:
         encoder = Fernet(key)
         return encoder.decrypt(password).decode()
 
-    def add_password(self, user):
+    def add_password(self, user: tuple):
         service_name = input("Введите имя сервиса: ")
         login = input('Введите логин, используемый для сервиса: ')
         is_additional_info = input('Наличие доп. данных? Введите y: ')
@@ -98,7 +98,7 @@ class PasswordManager:
         print('Операция отклонена!')
         self.add_password(user)
 
-    def select_service(self, user, action):
+    def select_service(self, user: tuple, action: str):
         services_list = db_mng.get_services_list(user[0])
         text = "-\n".join(row[0] for row in services_list)
         choice = input(f"{text}\nВведите имя сервиса или /q для выхода: ")
@@ -132,7 +132,7 @@ class PasswordManager:
     def update_service(self, service):
         ...
 
-    def select_action(self, user):
+    def select_action(self, user: tuple) -> None:
         while True:
             action = input(
                 "1.Add\n2.Get\n3.Change\n4.Delete\n5.Generate\n6.Quit\n"
