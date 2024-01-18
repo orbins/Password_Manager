@@ -35,7 +35,9 @@ class PasswordManager:
         return key
 
     def register(self):
-        username = input("Придумайте логин: ")
+        username = input("Придумайте логин или используйте /q для выхода: ")
+        if username == '/q':
+            return
         user = self.db_manager.get_user(username)
         if user:
             print("Данный юзернейм уже занят!")
@@ -47,7 +49,9 @@ class PasswordManager:
             print('Аккаунт успешно создан!')
 
     def login(self):
-        login = input("Введите логин: ")
+        login = input("Введите логин или используйте /q для выхода: ")
+        if login == '/q':
+            return
         master_password = getpass.getpass("Введите пароль: ")
         hashed_password = self.hash_password(master_password)
         user = self.db_manager.check_data(login, hashed_password)
@@ -77,9 +81,11 @@ class PasswordManager:
             info = '-'
         is_accepted = input(
             f"Имя сервис: {service_name}\nЛогин: {login}\nДоп. данные: {info}\n"
-            "Для подтверждения введите 'y', иначе операция будет отклонена: "
+            "Для подтверждения введите 'y', для выхода /q: "
         )
-        if is_accepted.lower() == 'y':
+        if is_accepted.lower() == '/q':
+            return
+        elif is_accepted.lower() == 'y':
             password = getpass.getpass("Введите пароль: ")
             password2 = getpass.getpass("Повторите пароль: ")
             if password == password2:
@@ -89,12 +95,15 @@ class PasswordManager:
                 return
             else:
                 logging.error("Пароли не похожи, попробуйте заново!")
+        print('Операция отклонена!')
         self.add_password(user)
 
     def select_service(self, user, action):
         services_list = db_mng.get_services_list(user[0])
         text = "-\n".join(row[0] for row in services_list)
-        choice = input(f"{text}\nВведите имя сервиса: ")
+        choice = input(f"{text}\nВведите имя сервиса или /q для выхода: ")
+        if choice == '/q':
+            return
         service_data = db_mng.get_service_data(user[0], choice)
         if service_data:
             if action == '2':
