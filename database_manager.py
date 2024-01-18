@@ -68,7 +68,7 @@ class DataBaseManager:
     def check_data(self, login, password):
         conn, cursor = self.connect()
         user = cursor.execute(
-            """SELECT * FROM users WHERE (username = ? AND password = ?)""",
+            """SELECT userid FROM users WHERE (username = ? AND password = ?)""",
             (login, password)
         ).fetchone()
         self.disconnect(conn)
@@ -95,5 +95,13 @@ class DataBaseManager:
         result = cursor.execute(
             """SELECT * FROM SERVICES WHERE (userid = ? AND service = ?)""",
             (userid, service,)
+        ).fetchone()
+        return result
+
+    def get_user_key(self, userid):
+        conn, cursor = self.connect()
+        result = cursor.execute(
+            """SELECT key FROM users WHERE (userid = ?)""",
+            (userid,)
         ).fetchone()
         return result

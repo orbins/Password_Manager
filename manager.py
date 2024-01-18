@@ -54,9 +54,9 @@ class PasswordManager:
             return
         master_password = getpass.getpass("Введите пароль: ")
         hashed_password = self.hash_password(master_password)
-        user = self.db_manager.check_data(login, hashed_password)
-        if user:
-            self.select_action(user)
+        uid = self.db_manager.check_data(login, hashed_password)
+        if uid:
+            self.select_action(uid)
         else:
             print("Неверные данные для входа, попробуйте ещё раз!")
             self.login()
@@ -71,7 +71,7 @@ class PasswordManager:
         encoder = Fernet(key)
         return encoder.decrypt(password).decode()
 
-    def add_password(self, user: tuple):
+    def add_password(self, userid: int):
         service_name = input("Введите имя сервиса: ")
         login = input('Введите логин, используемый для сервиса: ')
         is_additional_info = input('Наличие доп. данных? Введите y: ')
@@ -89,26 +89,27 @@ class PasswordManager:
             password = getpass.getpass("Введите пароль: ")
             password2 = getpass.getpass("Повторите пароль: ")
             if password == password2:
-                token = self.encrypt_password(password, user[3])
-                self.db_manager.add_service(user[0], service_name, login, token, info)
+                key = self.db_manager.get_user_key(userid)
+                token = self.encrypt_password(password, key)
+                self.db_manager.add_service(userid, service_name, login, token, info)
                 print('Сервис успешно добавлен!')
                 return
             else:
                 logging.error("Пароли не похожи, попробуйте заново!")
         print('Операция отклонена!')
-        self.add_password(user)
+        self.add_password(userid)
 
-    def select_service(self, user: tuple, action: str):
-        services_list = db_mng.get_services_list(user[0])
+    def select_service(self, userid: int, action: str):
+        services_list = db_mng.get_services_list(userid)
         text = "-\n".join(row[0] for row in services_list)
         choice = input(f"{text}\nВведите имя сервиса или /q для выхода: ")
         if choice == '/q':
             return
-        service_data = db_mng.get_service_data(user[0], choice)
+        service_data = db_mng.get_service_data(userid, choice)
         if service_data:
             if action == '2':
                 token = service_data[3]
-                key = user[3]
+                key = self.db_manager.get_user_key(userid)
                 password = self.decrypt_password(token, key)
                 pyperclip.copy(password)
                 print(f'Сервис: {service_data[1]}\n'
@@ -116,32 +117,32 @@ class PasswordManager:
                       f'Доп.инфа: {service_data[4]}\n'
                       f'Ваш пароль скопирован в буфер обмена!')
             elif action == '3':
-                self.update_service(service_data)
+                self.update_service(userid, service_data)
             else:
-                self.delete_service(service_data)
+                self.delete_service(userid, service_data)
         else:
             print("Сервис с таким именем не найден, попробуйте ещё раз!")
-            self.select_service(user, action)
+            self.select_service(userid, action)
 
-    def generate_password(self, user):
+    def generate_password(self, userid: int):
         ...
 
-    def delete_service(self, service):
+    def delete_service(self, userid: int, service: tuple):
+        self.db_manager.delete_service()
+
+    def update_service(self, user: int, service: tuple):
         ...
 
-    def update_service(self, service):
-        ...
-
-    def select_action(self, user: tuple) -> None:
+    def select_action(self, userid: int) -> None:
         while True:
             action = input(
                 "1.Add\n2.Get\n3.Change\n4.Delete\n5.Generate\n6.Quit\n"
                 "Выберите действие: "
             )
             match action:
-                case '1': self.add_password(user)
-                case '2': self.select_service(user, action)
-                case '4': self.generate_password(user)
+                case '1': self.add_password(userid)
+                case '2' | '3' | '4': self.select_service(userid, action)
+                case '5': self.generate_password(userid)
                 case '6': break
                 case _: print('Такой команды не существует, попробуйте ещё раз!')
 
