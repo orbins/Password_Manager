@@ -40,13 +40,13 @@ class PasswordManager:
             return
         user = self.db_manager.get_user(username)
         if user:
-            print("Данный юзернейм уже занят!")
+            print("Данный юзернейм уже занят!\n")
         else:
             master_password = getpass.getpass("Задайте пароль: ")
             hashed_password = self.hash_password(master_password)
             key = self.generate_key()
             self.db_manager.create_user(username, hashed_password, key)
-            print('Аккаунт успешно создан!')
+            print('Аккаунт успешно создан!\n')
 
     def login(self):
         login = input("Введите логин или используйте /q для выхода: ")
@@ -54,11 +54,11 @@ class PasswordManager:
             return
         master_password = getpass.getpass("Введите пароль: ")
         hashed_password = self.hash_password(master_password)
-        uid = self.db_manager.check_data(login, hashed_password)
-        if uid:
-            self.select_action(uid)
+        uid_tuple = self.db_manager.check_data(login, hashed_password)
+        if uid_tuple:
+            self.select_action(uid_tuple[0])
         else:
-            print("Неверные данные для входа, попробуйте ещё раз!")
+            print("Неверные данные для входа, попробуйте ещё раз!\n")
             self.login()
 
     @staticmethod
@@ -96,7 +96,7 @@ class PasswordManager:
                 return
             else:
                 logging.error("Пароли не похожи, попробуйте заново!")
-        print('Операция отклонена!')
+        print('Операция отклонена!\n')
         self.add_password(userid)
 
     def select_service(self, userid: int, action: str):
@@ -115,14 +115,14 @@ class PasswordManager:
                 print(f'Сервис: {service_data[1]}\n'
                       f'Логин: {service_data[2]}\n'
                       f'Доп.инфа: {service_data[4]}\n'
-                      f'Ваш пароль скопирован в буфер обмена!')
+                      f'Ваш пароль скопирован в буфер обмена!\n')
             elif action == '3':
                 self.update_service(userid, service_data[1])
             else:
                 self.db_manager.delete_service(userid, service_data[1])
-                print('Сервис успешно удалён!')
+                print('Сервис успешно удалён!\n')
         else:
-            print("Сервис с таким именем не найден, попробуйте ещё раз!")
+            print("Сервис с таким именем не найден, попробуйте ещё раз!\n")
             self.select_service(userid, action)
 
     def generate_password(self, userid: int):
@@ -142,7 +142,7 @@ class PasswordManager:
                 case '2' | '3' | '4': self.select_service(userid, action)
                 case '5': self.generate_password(userid)
                 case '6': break
-                case _: print('Такой команды не существует, попробуйте ещё раз!')
+                case _: print('Такой команды не существует, попробуйте ещё раз!\n')
 
     def main(self):
         while True:
@@ -157,7 +157,7 @@ class PasswordManager:
             elif choice == '3':
                 break
             else:
-                print('Такой команды не существует!')
+                print('Такой команды не существует!\n')
 
 
 if __name__ == '__main__':

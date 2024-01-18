@@ -68,7 +68,7 @@ class DataBaseManager:
     def check_data(self, login: str, password: bytes):
         conn, cursor = self.connect()
         user = cursor.execute(
-            """SELECT userid FROM users WHERE (username = ? AND password = ?)""",
+            """SELECT id FROM users WHERE (username = ? AND password = ?)""",
             (login, password)
         ).fetchone()
         self.disconnect(conn)
@@ -86,31 +86,35 @@ class DataBaseManager:
     def get_services_list(self, userid: int):
         conn, cursor = self.connect()
         result = cursor.execute(
-            """SELECT service FROM SERVICES WHERE (userid = ?)""",
-            (userid,)
+            """SELECT service FROM services WHERE userid = ?""",
+            (userid, )
         ).fetchall()
+        self.disconnect(conn)
         return result
 
     def get_service_data(self, userid: int, service: str):
         conn, cursor = self.connect()
         result = cursor.execute(
-            """SELECT * FROM SERVICES WHERE (userid = ? AND service = ?)""",
+            """SELECT * FROM services WHERE (userid = ? AND service = ?)""",
             (userid, service,)
         ).fetchone()
+        self.disconnect(conn)
         return result
 
     def get_user_key(self, userid: int):
         conn, cursor = self.connect()
         result = cursor.execute(
-            """SELECT key FROM users WHERE (userid = ?)""",
+            """SELECT key FROM users WHERE userid = ?""",
             (userid,)
         ).fetchone()
+        self.disconnect(conn)
         return result
 
     def delete_service(self, userid: int, service_name: str):
         conn, cursor = self.connect()
         result = cursor.execute(
-            """DELETE * FROM services WHERE (userid = ? service = ?)""",
+            """DELETE FROM services WHERE (userid = ? AND service = ?)""",
             (userid, service_name,)
         ).fetchone()
+        self.disconnect(conn)
         return result
