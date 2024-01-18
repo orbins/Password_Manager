@@ -104,7 +104,7 @@ class DataBaseManager:
     def get_user_key(self, userid: int):
         conn, cursor = self.connect()
         result = cursor.execute(
-            """SELECT key FROM users WHERE userid = ?""",
+            """SELECT key FROM users WHERE id = ?""",
             (userid,)
         ).fetchone()
         self.disconnect(conn)
@@ -118,3 +118,12 @@ class DataBaseManager:
         ).fetchone()
         self.disconnect(conn)
         return result
+
+    def update_service(self, userid: int, updated_service: str, service: str,
+                       login: str, password: bytes, info: str):
+        conn, cursor = self.connect()
+        cursor.execute(
+            """UPDATE services SET service = ?, login = ?, password = ?, info = ? WHERE (userid = ? AND service = ?) """,
+            (service, login, password, info, userid, updated_service),
+        ).fetchone()
+        self.disconnect(conn)

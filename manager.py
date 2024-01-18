@@ -71,7 +71,7 @@ class PasswordManager:
         encoder = Fernet(key)
         return encoder.decrypt(password).decode()
 
-    def add_password(self, userid: int):
+    def add_password(self, userid: int, updated_service: str = None):
         service_name = input("Введите имя сервиса: ")
         login = input('Введите логин, используемый для сервиса: ')
         is_additional_info = input('Наличие доп. данных? Введите y: ')
@@ -89,27 +89,31 @@ class PasswordManager:
             password = getpass.getpass("Введите пароль: ")
             password2 = getpass.getpass("Повторите пароль: ")
             if password == password2:
-                key = self.db_manager.get_user_key(userid)
+                key = self.db_manager.get_user_key(userid)[0]
                 token = self.encrypt_password(password, key)
-                self.db_manager.add_service(userid, service_name, login, token, info)
-                print('Сервис успешно добавлен!')
+                if updated_service:
+                    self.db_manager.update_service(userid, updated_service,
+                                                   service_name, login, token, info)
+                else:
+                    self.db_manager.add_service(userid, service_name, login, token, info)
+                print('Данные сохранены!\n')
                 return
             else:
-                logging.error("Пароли не похожи, попробуйте заново!")
+                logging.error("Пароли не похожи, попробуйте заново!\n")
         print('Операция отклонена!\n')
         self.add_password(userid)
 
     def select_service(self, userid: int, action: str):
         services_list = db_mng.get_services_list(userid)
         text = "-\n".join(row[0] for row in services_list)
-        choice = input(f"{text}\nВведите имя сервиса или /q для выхода: ")
+        choice = input(f"Список ваших сервисов:\n{text}\nВведите имя сервиса или /q для выхода: ")
         if choice == '/q':
             return
         service_data = db_mng.get_service_data(userid, choice)
         if service_data:
             if action == '2':
                 token = service_data[3]
-                key = self.db_manager.get_user_key(userid)
+                key = self.db_manager.get_user_key(userid)[0]
                 password = self.decrypt_password(token, key)
                 pyperclip.copy(password)
                 print(f'Сервис: {service_data[1]}\n'
@@ -117,7 +121,7 @@ class PasswordManager:
                       f'Доп.инфа: {service_data[4]}\n'
                       f'Ваш пароль скопирован в буфер обмена!\n')
             elif action == '3':
-                self.update_service(userid, service_data[1])
+                self.add_password(userid, service_data[1])
             else:
                 self.db_manager.delete_service(userid, service_data[1])
                 print('Сервис успешно удалён!\n')
@@ -126,9 +130,6 @@ class PasswordManager:
             self.select_service(userid, action)
 
     def generate_password(self, userid: int):
-        ...
-
-    def update_service(self, user: int, service_name: tuple):
         ...
 
     def select_action(self, userid: int) -> None:
