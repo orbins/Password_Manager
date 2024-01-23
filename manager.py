@@ -2,7 +2,9 @@ import getpass
 import hashlib
 import logging
 from pathlib import Path
-
+import re
+import secrets
+import string
 
 from cryptography.fernet import Fernet
 import pyperclip
@@ -129,8 +131,23 @@ class PasswordManager:
             print("Сервис с таким именем не найден, попробуйте ещё раз!\n")
             self.select_service(userid, action)
 
-    def generate_password(self, userid: int):
-        ...
+    def generate_password(self):
+        print('Укажите длину пароля, не менее 6 символов и не более 20: ')
+        length = input("Для выхода введите /q: ")
+        if length == '/q':
+            return
+        if length.isdigit() and (6 <= int(length) <= 20):
+            alphabet = string.ascii_letters + string.digits + string.punctuation
+            while True:
+                password = ''.join(secrets.choice(alphabet) for i in range(int(length)))
+                pattern = r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_])[a-zA-Z\d\W_]{6,20}$'
+                if re.match(pattern, password):
+                    break
+            pyperclip.copy(password)
+            print('Сгенерированный пароль скопирован в буфер обмена!')
+            return
+        print('Длина пароля должна соответствовать условиям!')
+        self.generate_password()
 
     def select_action(self, userid: int) -> None:
         while True:
@@ -141,7 +158,7 @@ class PasswordManager:
             match action:
                 case '1': self.add_password(userid)
                 case '2' | '3' | '4': self.select_service(userid, action)
-                case '5': self.generate_password(userid)
+                case '5': self.generate_password()
                 case '6': break
                 case _: print('Такой команды не существует, попробуйте ещё раз!\n')
 
