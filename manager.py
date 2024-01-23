@@ -2,11 +2,13 @@ import getpass
 import hashlib
 import logging
 from pathlib import Path
+import os
 import re
 import secrets
 import string
 
 from cryptography.fernet import Fernet
+from dotenv import load_dotenv
 import pyperclip
 
 from database_manager import DataBaseManager
@@ -19,6 +21,7 @@ stream_handler.setLevel(logging.INFO)
 stream_handler.setFormatter(formatter)
 logger.addHandler(stream_handler)
 
+load_dotenv()
 
 class PasswordManager:
 
@@ -141,7 +144,7 @@ class PasswordManager:
             while True:
                 password = ''.join(secrets.choice(alphabet) for i in range(int(length)))
                 pattern = r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_])[a-zA-Z\d\W_]{6,20}$'
-                if re.match(pattern, password):
+                if re.search(pattern, password):
                     break
             pyperclip.copy(password)
             print('Сгенерированный пароль скопирован в буфер обмена!')
@@ -179,9 +182,12 @@ class PasswordManager:
 
 
 if __name__ == '__main__':
-    file = Path(__file__).cwd() / "db_file.db"
-    db_mng = DataBaseManager(file)
-    if not file.exists():
-        db_mng.create_database()
-    manager = PasswordManager(db_mng)
-    manager.main()
+    file_path = Path(os.getenv('DB_PATH', None))
+    if not file_path:
+        print('Не определён путь к базе данных!')
+    else:
+        db_mng = DataBaseManager(file_path)
+        if not file_path.exists():
+            db_mng.create_database()
+        manager = PasswordManager(db_mng)
+        manager.main()
