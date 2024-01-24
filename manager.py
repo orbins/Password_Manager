@@ -23,23 +23,28 @@ logger.addHandler(stream_handler)
 
 load_dotenv()
 
+
 class PasswordManager:
+    """Класс, содержащий основной функционал работы для работы с паролями"""
 
     def __init__(self, db_manager):
         self.db_manager = db_manager
 
     @staticmethod
     def hash_password(password):
+        """Хэширование передаваемого мастер-пароля"""
         sha256 = hashlib.sha256()
         sha256.update(password.encode())
         return sha256.hexdigest()
 
     @staticmethod
     def generate_key():
+        """Генерация ключа для кодирования паролей от сервисов"""
         key = Fernet.generate_key()
         return key
 
     def register(self):
+        """Регистрация новых пользователей"""
         username = input("Придумайте логин или используйте /q для выхода: ")
         if username == '/q':
             return
@@ -54,6 +59,7 @@ class PasswordManager:
             print('Аккаунт успешно создан!\n')
 
     def login(self):
+        """Авторизация пользователй"""
         login = input("Введите логин или используйте /q для выхода: ")
         if login == '/q':
             return
@@ -68,15 +74,18 @@ class PasswordManager:
 
     @staticmethod
     def encrypt_password(password: str, key: bytes) -> bytes:
+        """Кодирование паролей от сервисов"""
         encoder = Fernet(key)
         return encoder.encrypt(password.encode())
 
     @staticmethod
     def decrypt_password(password: str, key: bytes) -> str:
+        """Декодироваие паролей от сервисов"""
         encoder = Fernet(key)
         return encoder.decrypt(password).decode()
 
     def add_password(self, userid: int, updated_service: str = None):
+        """Добавление нового пароля"""
         service_name = input("Введите имя сервиса: ")
         login = input('Введите логин, используемый для сервиса: ')
         is_additional_info = input('Наличие доп. данных? Введите y: ')
@@ -109,6 +118,7 @@ class PasswordManager:
         self.add_password(userid)
 
     def select_service(self, userid: int, action: str):
+        """Получение пароля от сервиса"""
         services_list = db_mng.get_services_list(userid)
         text = "-\n".join(row[0] for row in services_list)
         choice = input(f"Список ваших сервисов:\n{text}\nВведите имя сервиса или /q для выхода: ")
@@ -135,6 +145,7 @@ class PasswordManager:
             self.select_service(userid, action)
 
     def generate_password(self):
+        """Генерация нового пароля"""
         print('Укажите длину пароля, не менее 6 символов и не более 20: ')
         length = input("Для выхода введите /q: ")
         if length == '/q':
@@ -153,6 +164,7 @@ class PasswordManager:
         self.generate_password()
 
     def select_action(self, userid: int) -> None:
+        """Выбор действия для авторизованных пользователей"""
         while True:
             action = input(
                 "1.Add\n2.Get\n3.Change\n4.Delete\n5.Generate\n6.Quit\n"
@@ -166,6 +178,7 @@ class PasswordManager:
                 case _: print('Такой команды не существует, попробуйте ещё раз!\n')
 
     def main(self):
+        """Меню для неавторизованных пользователей"""
         while True:
             choice = input(
                 "1.Register\n2.Login\n3.Quit\n"
