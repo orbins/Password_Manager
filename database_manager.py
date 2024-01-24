@@ -24,18 +24,18 @@ class DataBaseManager:
         conn, cursor = self.connect()
 
         cursor.execute(
-            '''
+            """
             CREATE TABLE "users" (
             "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
             "username" TEXT NOT NULL,
             "password" BLOB NOT NULL,
             "key" BLOB NOT NULL
             );
-            '''
+            """
         )
 
         cursor.execute(
-            '''
+            """
             CREATE TABLE "services" (
             "userid" INT NOT NULL,
             "service" TEXT NOT NULL,
@@ -46,7 +46,7 @@ class DataBaseManager:
             FOREIGN KEY ("userid")
             REFERENCES users(id)
             );
-            '''
+            """
         )
 
         self.disconnect(conn)
@@ -55,8 +55,7 @@ class DataBaseManager:
         """Получение пользователя по урлу"""
         conn, cursor = self.connect()
         user = cursor.execute(
-            """SELECT * FROM users WHERE username = ?""",
-            (username,)
+            """SELECT * FROM users WHERE username = ?""", (username,)
         ).fetchone()
         self.disconnect(conn)
         return user
@@ -66,7 +65,11 @@ class DataBaseManager:
         conn, cursor = self.connect()
         cursor.execute(
             """INSERT INTO users (username, password, key)  VALUES (?, ?, ?)""",
-            (username, hashed_password, key,)
+            (
+                username,
+                hashed_password,
+                key,
+            ),
         )
         self.disconnect(conn)
 
@@ -75,13 +78,14 @@ class DataBaseManager:
         conn, cursor = self.connect()
         user = cursor.execute(
             """SELECT id FROM users WHERE (username = ? AND password = ?)""",
-            (login, password)
+            (login, password),
         ).fetchone()
         self.disconnect(conn)
         return user
 
-    def add_service(self, userid: int, service: str,
-                    login: str, password: bytes, info: str):
+    def add_service(
+        self, userid: int, service: str, login: str, password: bytes, info: str
+    ):
         """Добавление нового сервиса пользователя"""
         conn, cursor = self.connect()
         cursor.execute(
@@ -94,8 +98,7 @@ class DataBaseManager:
         """Получение всех сервисов конкретного пользователя"""
         conn, cursor = self.connect()
         result = cursor.execute(
-            """SELECT service FROM services WHERE userid = ?""",
-            (userid, )
+            """SELECT service FROM services WHERE userid = ?""", (userid,)
         ).fetchall()
         self.disconnect(conn)
         return result
@@ -105,7 +108,10 @@ class DataBaseManager:
         conn, cursor = self.connect()
         result = cursor.execute(
             """SELECT * FROM services WHERE (userid = ? AND service = ?)""",
-            (userid, service,)
+            (
+                userid,
+                service,
+            ),
         ).fetchone()
         self.disconnect(conn)
         return result
@@ -114,8 +120,7 @@ class DataBaseManager:
         """Получение ключа шифрования для пользователя"""
         conn, cursor = self.connect()
         result = cursor.execute(
-            """SELECT key FROM users WHERE id = ?""",
-            (userid,)
+            """SELECT key FROM users WHERE id = ?""", (userid,)
         ).fetchone()
         self.disconnect(conn)
         return result
@@ -125,17 +130,27 @@ class DataBaseManager:
         conn, cursor = self.connect()
         result = cursor.execute(
             """DELETE FROM services WHERE (userid = ? AND service = ?)""",
-            (userid, service_name,)
+            (
+                userid,
+                service_name,
+            ),
         ).fetchone()
         self.disconnect(conn)
         return result
 
-    def update_service(self, userid: int, updated_service: str, service: str,
-                       login: str, password: bytes, info: str):
-        """Изменение данных о серисе пользователя"""
+    def update_service(
+        self,
+        userid: int,
+        updated_service: str,
+        service: str,
+        login: str,
+        password: bytes,
+        info: str,
+    ):
+        """Изменение данных о сервисе пользователя"""
         conn, cursor = self.connect()
         cursor.execute(
-            """UPDATE services SET service = ?, login = ?, password = ?, info = ? WHERE (userid = ? AND service = ?) """,
+            """UPDATE services SET service = ?, login = ?, password = ?, info = ? WHERE (userid = ? AND service = ?)""",
             (service, login, password, info, userid, updated_service),
         ).fetchone()
         self.disconnect(conn)
