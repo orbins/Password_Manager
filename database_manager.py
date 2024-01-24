@@ -8,16 +8,19 @@ class DataBaseManager:
         self.db_file = db_file
 
     def connect(self):
+        """Подключение к базе"""
         connection = sqlite3.connect(self.db_file)
         cursor = connection.cursor()
         return connection, cursor
 
     @staticmethod
     def disconnect(connection):
+        """Отключение соединения с базой"""
         connection.commit()
         connection.close()
 
     def create_database(self):
+        """Создание БД"""
         conn, cursor = self.connect()
 
         cursor.execute(
@@ -49,6 +52,7 @@ class DataBaseManager:
         self.disconnect(conn)
 
     def get_user(self, username: str):
+        """Получение пользователя по урлу"""
         conn, cursor = self.connect()
         user = cursor.execute(
             """SELECT * FROM users WHERE username = ?""",
@@ -58,6 +62,7 @@ class DataBaseManager:
         return user
 
     def create_user(self, username: str, hashed_password: bytes, key: bytes):
+        """Создание пользователя"""
         conn, cursor = self.connect()
         cursor.execute(
             """INSERT INTO users (username, password, key)  VALUES (?, ?, ?)""",
@@ -66,6 +71,7 @@ class DataBaseManager:
         self.disconnect(conn)
 
     def check_data(self, login: str, password: bytes):
+        """Проверка подлинности учётных данных"""
         conn, cursor = self.connect()
         user = cursor.execute(
             """SELECT id FROM users WHERE (username = ? AND password = ?)""",
@@ -76,6 +82,7 @@ class DataBaseManager:
 
     def add_service(self, userid: int, service: str,
                     login: str, password: bytes, info: str):
+        """Добавление нового сервиса пользователя"""
         conn, cursor = self.connect()
         cursor.execute(
             """INSERT INTO services (userid, service, login, password, info)  VALUES (?, ?, ?, ?, ?)""",
@@ -84,6 +91,7 @@ class DataBaseManager:
         self.disconnect(conn)
 
     def get_services_list(self, userid: int):
+        """Получение всех сервисов конкретного пользователя"""
         conn, cursor = self.connect()
         result = cursor.execute(
             """SELECT service FROM services WHERE userid = ?""",
@@ -93,6 +101,7 @@ class DataBaseManager:
         return result
 
     def get_service_data(self, userid: int, service: str):
+        """Получение конкретного сервиса пользователя"""
         conn, cursor = self.connect()
         result = cursor.execute(
             """SELECT * FROM services WHERE (userid = ? AND service = ?)""",
@@ -102,6 +111,7 @@ class DataBaseManager:
         return result
 
     def get_user_key(self, userid: int):
+        """Получение ключа шифрования для пользователя"""
         conn, cursor = self.connect()
         result = cursor.execute(
             """SELECT key FROM users WHERE id = ?""",
@@ -111,6 +121,7 @@ class DataBaseManager:
         return result
 
     def delete_service(self, userid: int, service_name: str):
+        """Удаление сервиса пользователя"""
         conn, cursor = self.connect()
         result = cursor.execute(
             """DELETE FROM services WHERE (userid = ? AND service = ?)""",
@@ -121,6 +132,7 @@ class DataBaseManager:
 
     def update_service(self, userid: int, updated_service: str, service: str,
                        login: str, password: bytes, info: str):
+        """Изменение данных о серисе пользователя"""
         conn, cursor = self.connect()
         cursor.execute(
             """UPDATE services SET service = ?, login = ?, password = ?, info = ? WHERE (userid = ? AND service = ?) """,
